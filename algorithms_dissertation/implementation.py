@@ -154,7 +154,7 @@ def total_waiting(a, s, k, c):
 def annealing(a, s, c):
 
     x = a
-    iterations = 50    #iterations for each temperature
+    iterations = 100    #iterations for each temperature
     α = 1               #airborne parameter
     #β = 1/60            #ground parameter
 
@@ -168,10 +168,10 @@ def annealing(a, s, c):
 
     for k in [10]:
 
-        for β in [1/15]:
+        for β in [1/100]:
 
-            T = 35  # initial temperature
-            T_min = 1  # minimum value of temperature
+            T = 40  # initial temperature
+            T_min = 0.5  # minimum value of temperature
             best = a # initialize plan
             # calculate initial result
             w0 = sum(total_waiting(a, s, k, c))  # initial waiting time
@@ -203,7 +203,7 @@ def annealing(a, s, c):
                     d = []
 
 
-                    if (random.random() >= 0.95):
+                    if (random.random() >= 0.95 - iterations * 0.4):
                         #find the most busy hour, randomly choose an hour that is the current one, the one before, or two hours before
                         t1 = int(best.index(max(best))) - random.choice([0, 1])
 
@@ -288,7 +288,7 @@ def annealing(a, s, c):
                     writer.writerow(d)
                     print(d)
 
-                    if counter >= 15:
+                    if counter >= 30:
                         break
 
                 T = 0.9 * T
