@@ -168,9 +168,9 @@ def annealing(a, s, c):
 
     for k in [10]:
 
-        for β in [1/100]:
+        for β in [1/30]:
 
-            T = 40  # initial temperature
+            T = 20  # initial temperature
             T_min = 0.5  # minimum value of temperature
             best = a # initialize plan
             # calculate initial result
@@ -203,7 +203,7 @@ def annealing(a, s, c):
                     d = []
 
 
-                    if (random.random() >= 0.95 - iterations * 0.4):
+                    if (random.random() >= 0.95 - iterations * 0.004):
                         #find the most busy hour, randomly choose an hour that is the current one, the one before, or two hours before
                         t1 = int(best.index(max(best))) - random.choice([0, 1])
 
@@ -268,6 +268,7 @@ def annealing(a, s, c):
                         P = math.exp(-cost/T)
                         r = random.random()
                         print(P, r)
+                        print(cost)
 
                         if P > r:
                             w0 = w1
