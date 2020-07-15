@@ -96,7 +96,7 @@ def SPVA(a, s, k, c):
         mean_ql = 0
         awt = 0
 
-        for j in range(0,c + 1):
+        for j in range(0, c + 1):
 
             mean_ql = mean_ql + Matrix[i][j] * j
 
