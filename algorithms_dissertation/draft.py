@@ -167,13 +167,14 @@ def annealing(a, s, c):
 
         for β in [1/15, 1/30, 1/45, 1/60, 1/75]:
 
-            T = 30  # initial temperature
+            T = 20  # initial temperature
             T_min = 0.5  # minimum value of temperature
             best = a # initialize plan
             # calculate initial result
             w0 = sum(total_waiting(a, s, k, c))  # initial waiting time
+
             air_delay = w0 * α  # initial air delay cost
-            ground_delay = 0  # initial ground delay csot
+            ground_delay = 0  # initial ground delay cost
             d = []  # for writing
 
             # writing
@@ -192,7 +193,6 @@ def annealing(a, s, c):
                 for i in range(iterations):
 
                     d = []
-
 
                     if (random.random() >= 0.95 - iterations * 0.004):
                         #find the most busy hour, randomly choose an hour that is the current one, the one before, or two hours before
@@ -240,10 +240,11 @@ def annealing(a, s, c):
                     d.append(current)   #record current plan
 
                     #generate new result
+
                     w1 = sum(total_waiting(current, s, k, c))       #current airborne delay
 
 
-                    cost = α * (w1 - w0) + ground_delay + aircrafts * β * t2 * 60  #calculate cost(may be other ways)
+                    cost = α * (w1 - w0) + aircrafts * β * t2 * 60  #calculate cost(may be other ways)
 
                     if cost < 0:
                         w0 = w1
