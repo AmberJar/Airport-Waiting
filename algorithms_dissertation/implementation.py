@@ -154,7 +154,7 @@ def total_waiting(a, s, k, c):
 def annealing(a, s, c):
 
     x = a
-    iterations = 100    #iterations for each temperature
+    iterations = 60    #iterations for each temperature
     α = 1               #airborne parameter
     #β = 1/60            #ground parameter
 
@@ -166,17 +166,17 @@ def annealing(a, s, c):
     #current best plan
     best_results = []
 
-    for k in [10]:
+    for k in [4, 6, 8, 10, 12]:
 
-        for β in [1/30]:
+        for β in [1/60, 1/30, 1/45, 1/60, 1/75]:
 
-            T = 20  # initial temperature
-            T_min = 0.5  # minimum value of temperature
+            T = 10  # initial temperature
+            T_min = 0.3 # minimum value of temperature
             best = a # initialize plan
             # calculate initial result
             w0 = sum(total_waiting(a, s, k, c))  # initial waiting time
             air_delay = w0 * α  # initial air delay cost
-            ground_delay = 0  # initial ground delay csot
+            ground_delay = 0  # initial ground delay cost
             d = []  # for writing
             temp = []  # for final comparison
             # writing
@@ -202,8 +202,7 @@ def annealing(a, s, c):
 
                     d = []
 
-
-                    if (random.random() >= 0.95 - iterations * 0.004):
+                    if (random.random() >= 0.95 - iterations * 0.008):
                         #find the most busy hour, randomly choose an hour that is the current one, the one before, or two hours before
                         t1 = int(best.index(max(best))) - random.choice([0, 1])
 
@@ -252,7 +251,7 @@ def annealing(a, s, c):
                     w1 = sum(total_waiting(current, s, k, c))       #current airborne delay
 
 
-                    cost = α * (w1 - w0) + ground_delay + aircrafts * β * t2 * 60  #calculate cost(may be other ways)
+                    cost = α * (w1 - w0) + aircrafts * β * t2 * 60  #calculate cost(may be other ways)
 
                     if cost < 0:
                         w0 = w1
@@ -289,7 +288,7 @@ def annealing(a, s, c):
                     writer.writerow(d)
                     print(d)
 
-                    if counter >= 30:
+                    if counter >= 15:
                         break
 
                 T = 0.9 * T
