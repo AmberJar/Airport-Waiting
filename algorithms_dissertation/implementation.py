@@ -166,12 +166,12 @@ def annealing(a, s, c):
     #current best plan
     best_results = []
 
-    for k in [4, 6, 8, 10, 12]:
+    for k in [4, 7, 10, 13]:
 
-        for β in [1/60, 1/30, 1/45, 1/60, 1/75]:
+        for β in [1/24, 1/36, 1/48, 1/60]:
 
-            T = 10  # initial temperature
-            T_min = 0.3 # minimum value of temperature
+            T = 5  # initial temperature
+            T_min = 0.2 # minimum value of temperature
             best = a # initialize plan
             # calculate initial result
             w0 = sum(total_waiting(a, s, k, c))  # initial waiting time
@@ -202,7 +202,7 @@ def annealing(a, s, c):
 
                     d = []
 
-                    if (random.random() >= 0.95 - iterations * 0.008):
+                    if (random.random() >= 0.95 - iterations * 0.004):
                         #find the most busy hour, randomly choose an hour that is the current one, the one before, or two hours before
                         t1 = int(best.index(max(best))) - random.choice([0, 1])
 
@@ -266,8 +266,6 @@ def annealing(a, s, c):
                         #metropolis principle
                         P = math.exp(-cost/T)
                         r = random.random()
-                        print(P, r)
-                        print(cost)
 
                         if P > r:
                             w0 = w1
@@ -301,6 +299,8 @@ def annealing(a, s, c):
             temp.append(β)
 
             print(temp)
+            midtime = datetime.datetime.now()
+            print(midtime - starttime)
 
     csvFile.close()
 

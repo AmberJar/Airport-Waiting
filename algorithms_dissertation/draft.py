@@ -163,9 +163,9 @@ def annealing(a, s, c):
     #current best plan
     best_results = []
 
-    for k in [4, 6, 8, 10, 12]:
+    for k in [6, 8, 10, 12]:
 
-        for β in [1/15, 1/30, 1/45, 1/60, 1/75]:
+        for β in [1/15, 1/30, 1/45, 1/60]:
 
             T = 20  # initial temperature
             T_min = 0.5  # minimum value of temperature
@@ -194,14 +194,17 @@ def annealing(a, s, c):
 
                     d = []
 
-                    if (random.random() >= 0.95 - iterations * 0.004):
+                    if (random.random() >= 0.95 - iterations * 0.008):
                         #find the most busy hour, randomly choose an hour that is the current one, the one before, or two hours before
                         t1 = int(best.index(max(best))) - random.choice([0, 1])
 
                         #if the selected hour is less than 0, then pick another one
                         while True:
 
-                            if t1 >= 0 and t1 <= 4:
+                            if t1 < 0 or t1 > 4:
+                                continue
+
+                            if best[t1] >= 2:
                                 break
 
                             t1 = best.index(max(best)) - random.choice([0, 1])
@@ -259,6 +262,7 @@ def annealing(a, s, c):
                         #metropolis principle
                         P = math.exp(-cost/T)
                         r = random.random()
+                        print(P, r)
 
                         if P > r:
                             w0 = w1
@@ -277,6 +281,7 @@ def annealing(a, s, c):
 
 
                     writer.writerow(d)
+                    print(d)
 
                     if counter >= 25:
                         break
