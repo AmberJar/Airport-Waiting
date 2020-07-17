@@ -284,7 +284,6 @@ def annealing(a, s, c):
 
 
                     writer.writerow(d)
-                    print(d)
 
                     if counter >= 15:
                         break
