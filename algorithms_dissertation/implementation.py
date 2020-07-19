@@ -96,7 +96,7 @@ def SPVA(a, s, k, c):
         mean_ql = 0
         awt = 0
 
-        for j in range(0,c + 1):
+        for j in range(0, c + 1):
 
             mean_ql = mean_ql + Matrix[i][j] * j
 
@@ -153,7 +153,6 @@ def total_waiting(a, s, k, c):
 #optimization
 def annealing(a, s, c):
 
-    x = a
     iterations = 60    #iterations for each temperature
     α = 1               #airborne parameter
     #β = 1/60            #ground parameter
@@ -189,8 +188,6 @@ def annealing(a, s, c):
 
             temp.append(a)
             temp.append(air_delay)
-            temp.append(ground_delay)
-
 
             #if the temperature is low enough, then exit
             while T >= T_min:
@@ -202,7 +199,7 @@ def annealing(a, s, c):
 
                     d = []
 
-                    if (random.random() >= 0.95 - iterations * 0.004):
+                    if (random.random() >= 0.60 - iterations * 0.004):
                         #find the most busy hour, randomly choose an hour that is the current one, the one before, or two hours before
                         t1 = int(best.index(max(best))) - random.choice([0, 1])
 
@@ -253,6 +250,9 @@ def annealing(a, s, c):
 
                     cost = α * (w1 - w0) + aircrafts * β * t2 * 60  #calculate cost(may be other ways)
 
+                    #delay hours
+                    hour = 0
+
                     if cost < 0:
                         w0 = w1
                         best = current[:]
@@ -298,8 +298,6 @@ def annealing(a, s, c):
             temp.append(β)
 
             print(temp)
-            midtime = datetime.datetime.now()
-            print(midtime - starttime)
 
     csvFile.close()
 
@@ -312,7 +310,6 @@ s = 40
 c = 50
 
 A = annealing(a, s, c)
-print(A)
 
 endtime = datetime.datetime.now()
 
