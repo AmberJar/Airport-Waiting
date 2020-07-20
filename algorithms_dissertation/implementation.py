@@ -184,7 +184,6 @@ def annealing(a, s, c):
             d.append(ground_delay)
             d.append(0)
             writer.writerow(d)
-            print(d)
 
             temp.append(a)
             temp.append(air_delay)
