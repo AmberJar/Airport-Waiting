@@ -153,8 +153,7 @@ def total_waiting(a, s, k, c):
 #optimization
 def annealing(a, s, c):
 
-    x = a
-    iterations = 50    #iterations for each temperature
+    iterations = 60    #iterations for each temperature
     α = 1               #airborne parameter
     #β = 1/60            #ground parameter
 
@@ -166,25 +165,28 @@ def annealing(a, s, c):
     #current best plan
     best_results = []
 
-    for k in [4, 6, 8, 10, 12]:
+    for k in [4, 7, 10, 13]:
 
-        for β in [1/15, 1/30, 1/45, 1/60, 1/75]:
+        for β in [1/24, 1/36, 1/48, 1/60]:
 
-            T = 10  # initial temperature
-            T_min = 0.1  # minimum value of temperature
+            T = 5  # initial temperature
+            T_min = 0.2 # minimum value of temperature
             best = a # initialize plan
             # calculate initial result
             w0 = sum(total_waiting(a, s, k, c))  # initial waiting time
             air_delay = w0 * α  # initial air delay cost
-            ground_delay = 0  # initial ground delay csot
+            ground_delay = 0  # initial ground delay cost
             d = []  # for writing
-
+            temp = []  # for final comparison
             # writing
             d.append(a)
             d.append(air_delay)
             d.append(ground_delay)
             d.append(0)
             writer.writerow(d)
+
+            temp.append(a)
+            temp.append(air_delay)
 
             #if the temperature is low enough, then exit
             while T >= T_min:
@@ -196,10 +198,9 @@ def annealing(a, s, c):
 
                     d = []
 
-
-                    if (random.random() >= 0.5):
+                    if (random.random() >= 0.60 - iterations * 0.004):
                         #find the most busy hour, randomly choose an hour that is the current one, the one before, or two hours before
-                        t1 = int(best.index(max(best))) - random.choice([-1, 0, 1])
+                        t1 = int(best.index(max(best))) - random.choice([0, 1])
 
                         #if the selected hour is less than 0, then pick another one
                         while True:
@@ -207,7 +208,7 @@ def annealing(a, s, c):
                             if t1 >= 0 and t1 <= 16:
                                 break
 
-                            t1 = best.index(max(best)) - random.choice([0, 1, -1])
+                            t1 = best.index(max(best)) - random.choice([0, 1])
 
                         #randomly choose number of hours to delay
                         t2 = random.choice([1, 2])
@@ -245,8 +246,11 @@ def annealing(a, s, c):
                     #generate new result
                     w1 = sum(total_waiting(current, s, k, c))       #current airborne delay
 
+                    #consider different cost function when delay
+                    cost = α * (w1 - w0) + aircrafts * β * t2 * 60  #calculate cost(may be other ways)
 
-                    cost = α * (w1 - w0) + ground_delay + aircrafts * β * t2 * 60  #calculate cost(may be other ways)
+                    #delay hours
+                    hour = 0
 
                     if cost < 0:
                         w0 = w1
@@ -285,22 +289,18 @@ def annealing(a, s, c):
 
                 T = 0.9 * T
 
-            temp = []
-            C = []
+
             temp.append(best)
             temp.append(w0)
             temp.append(ground_delay)
             temp.append(k)
             temp.append(β)
 
-            best_results.append(temp)
             print(temp)
-
-            writer.writerow(C)
 
     csvFile.close()
 
-    return best_results
+    return temp
 
 
 #paramters definition
@@ -309,7 +309,6 @@ s = 40
 c = 50
 
 A = annealing(a, s, c)
-print(A)
 
 endtime = datetime.datetime.now()
 
