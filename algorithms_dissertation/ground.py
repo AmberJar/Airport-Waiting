@@ -4,10 +4,10 @@ import random
 import csv
 starttime = datetime.datetime.now()
 
+T = 20  # in hours
+
 def SPVA(a, s, k, c):
     P = 0
-
-    T = 18  # in hours
 
     # time unit
     t1 = 1 / s
@@ -41,7 +41,6 @@ def SPVA(a, s, k, c):
             # probability when the queues not reaching maximum
             elif n > 0 and j < c:
                 # initial value
-                p1 = 0
                 p2 = 0
 
                 # estimate of the probability of j new planes joining the queue
@@ -105,13 +104,13 @@ def SPVA(a, s, k, c):
     hour_q_length =[]
     results = [] #AWT hourly
 
-    for i in range(0,18):
+    for i in range(0, T):
 
         hour_q = 0
 
-        for j in range(40):
+        for j in range(s):
 
-            hour_q = hour_q + q_length[40 * i + j]
+            hour_q = hour_q + q_length[s * i + j]
 
         hour_q_length.append(hour_q / 60)
 
@@ -143,7 +142,7 @@ def total_waiting(a, s, k, c):
     mean_time = SPVA(a, s, k, c)
 
     total_delay = []
-    for i in range(18):
+    for i in range(T):
         total_delay.append(mean_time[i] * a[i])
 
     #return total delay of each 18 hour (A 1 x 18 list)
@@ -165,7 +164,7 @@ def annealing(a, s, c):
     #current best plan
     best_results = []
 
-    for k in [4, 7, 10, 13]:
+    for k in [1, 4, 7, 10, 13]:
 
         for β in [1/24, 1/36, 1/48, 1/60]:
 
@@ -178,15 +177,19 @@ def annealing(a, s, c):
             ground_delay = 0  # initial ground delay cost
             d = []  # for writing
             temp = []  # for final comparison
+            delay_hour = 0
             # writing
             d.append(a)
             d.append(air_delay)
-            d.append(ground_delay)
+            d.append(delay_hour)
             d.append(0)
             writer.writerow(d)
 
             temp.append(a)
             temp.append(air_delay)
+
+            #record the hour that already has delayed
+            delay_status = [0] * T
 
             #if the temperature is low enough, then exit
             while T >= T_min:
@@ -205,7 +208,7 @@ def annealing(a, s, c):
                         #if the selected hour is less than 0, then pick another one
                         while True:
 
-                            if t1 >= 0 and t1 <= 16:
+                            if t1 >= 0 and t1 <= 18:
                                 break
 
                             t1 = best.index(max(best)) - random.choice([0, 1])
@@ -216,21 +219,21 @@ def annealing(a, s, c):
                         #after delay, if the current selected hour is over 17, then pick another delay hour
                         while True:
 
-                            if t1 + t2 <= 17:
+                            if t1 + t2 <= 19:
                                 break
 
                             t2 = random.choice([1, 2])
                     else:
-                        t1 = random.randint(0, 16)
+                        t1 = random.randint(0, 19)
                         t2 = random.choice([1, 2])
                         # generate a new arrangement in the neighborhood of x
 
                         while True:
 
-                            if t1 + t2 <= 17:
+                            if t1 + t2 <= 19:
                                 break
 
-                            t1 = random.randint(0, 16)
+                            t1 = random.randint(0, 19)
                             t2 = random.choice([1, 2])
 
                     #copy the best plan to the current plan
@@ -247,18 +250,21 @@ def annealing(a, s, c):
                     w1 = sum(total_waiting(current, s, k, c))       #current airborne delay
 
                     #consider different cost function when delay
-                    cost = α * (w1 - w0) + aircrafts * β * t2 * 60  #calculate cost(may be other ways)
+                    cost = α * (w1 - w0) + (aircrafts * β * t2 * 60) * (1 + delay_status[t1] * 0.3)  #calculate cost(may be other ways)
 
                     #delay hours
                     hour = 0
 
                     if cost < 0:
+                        print(delay_hour)
                         w0 = w1
                         best = current[:]
-                        ground_delay = ground_delay + aircrafts * β * t2 * 60
+                        ground_delay = ground_delay + aircrafts * β * t2 * 60 * (1 + delay_status[t1] * 0.3)
+                        delay_hour = delay_hour + 1
+                        delay_status[t1] = delay_status[t1] + 1
 
                         d.append(α * w0)
-                        d.append(ground_delay)
+                        d.append(delay_hour)
                         d.append(0)
 
                     elif cost >= 0:
@@ -266,23 +272,29 @@ def annealing(a, s, c):
                         P = math.exp(-cost/T)
                         r = random.random()
 
+                        print(P,r)
+                        print(delay_hour)
+
                         if P > r:
                             w0 = w1
                             best = current[:]
-                            ground_delay = ground_delay + aircrafts * β * t2 * 60
+                            ground_delay = ground_delay + aircrafts * β * t2 * 60 * (1 + delay_status[t1] * 0.3)
+                            delay_hour = delay_hour + 1
+                            delay_status[t1] = delay_status[t1] + 1
 
                             d.append(α * w0)
-                            d.append(ground_delay)
+                            d.append(delay_hour)
                             d.append(0)
                         else:
                             counter = counter + 1
 
                             d.append(α * w0)
-                            d.append(ground_delay)
+                            d.append(delay_hour)
                             d.append(1)
 
 
                     writer.writerow(d)
+                    print(d)
 
                     if counter >= 15:
                         break
@@ -304,7 +316,7 @@ def annealing(a, s, c):
 
 
 #paramters definition
-a = [35, 31, 28, 40, 33, 35, 37, 35, 38, 32, 32, 35, 31, 34, 26, 23, 28, 24]
+a = [6, 12, 36, 39, 35, 43, 42, 35, 36, 37, 39, 38, 37, 37, 38, 40, 38, 33, 16, 1]
 s = 40
 c = 50
 
