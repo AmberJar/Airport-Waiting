@@ -189,7 +189,7 @@ def annealing(a, s, c):
             temp.append(air_delay)
 
             #record the hour that already has delayed
-            delay_status = [0] * T
+            delay_status = [0] * 20
 
             #if the temperature is low enough, then exit
             while T >= T_min:
