@@ -1,4 +1,4 @@
-from practice.从入门到实践.language import AnonymousSurvey
+from practice.从入门到实践.test.language import AnonymousSurvey
 #定义一个问题，并创建一个表示调查的AnonymousSurvey对象
 question = "What language did you first learn to speak?"
 my_survey = AnonymousSurvey(question)

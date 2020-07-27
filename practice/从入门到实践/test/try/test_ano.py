@@ -1,5 +1,5 @@
 import unittest
-from practice.从入门到实践.language import AnonymousSurvey
+from practice.从入门到实践.test.language import AnonymousSurvey
 
 class TestAnonmyousSurvey(unittest.TestCase):
 
