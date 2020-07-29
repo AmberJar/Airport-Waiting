@@ -9,6 +9,9 @@ starttime = datetime.datetime.now()
 T = 20  # in hours
 
 def SPVA(a, s, k, c):
+
+    global T
+
     P = 0
 
     # time unit
@@ -103,7 +106,6 @@ def SPVA(a, s, k, c):
 
         q_length.append(mean_ql)
 
-    hour_q_length =[]
     results = [] #AWT hourly
 
     for i in range(0, T):
@@ -113,8 +115,6 @@ def SPVA(a, s, k, c):
         for j in range(s):
 
             hour_q = hour_q + q_length[s * i + j]
-
-        hour_q_length.append(hour_q / 60)
 
         hour_queue = hour_q / 60
         hour_awt = (hour_queue + 0.5) * 1.5
@@ -157,6 +157,7 @@ def annealing(a, s, c):
     iterations = 60    #iterations for each temperature
     α = 1               #airborne parameter
     #β = 1/60            #ground parameter
+    global T             #全局变量T
 
     filename = 'heathrow.csv'
 
@@ -167,7 +168,7 @@ def annealing(a, s, c):
             x = list(reader)
             aircraft_data = np.array(x, dtype='int')
 
-    data = list(aircraft_data[:,1]/100)
+    data_original = list(aircraft_data[:,1]/100)
 
     fileHeader = ["index", "airborne delay cost", "ground delay cost", "transform"]
     csvFile = open("data.csv", "w", newline='')
@@ -180,9 +181,10 @@ def annealing(a, s, c):
 
         for β in [1/24, 1/36, 1/48, 1/60]:
 
-            T = 5  # initial temperature
+            T0 = 5  # initial temperature
             T_min = 0.2 # minimum value of temperature
             best = a # initialize plan
+            data = data_original #initialize accurate plan
             # calculate initial result
             splitted = total_waiting(a, s, k, c)
             w0 = sum(splitted)  # initial waiting time
@@ -203,10 +205,10 @@ def annealing(a, s, c):
             temp.append(air_delay)
 
             #record the hour that already has delayed
-            delay_status = [0] * 20
+            delay_status = [0] * T
 
             #if the temperature is low enough, then exit
-            while T >= T_min:
+            while T0 >= T_min:
 
                 #if not changed for too many times, then leave the current iteration
                 counter = 0
@@ -225,7 +227,7 @@ def annealing(a, s, c):
                             #if the selected hour is less than 0, then pick another one
                             while True:
 
-                                if t1 >= 0 and t1 <= 18:
+                                if t1 >= 0 and t1 <= T - 2:
                                     break
 
                                 t1 = splitted.index(max(splitted)) - random.choice([0, 1])
@@ -236,18 +238,19 @@ def annealing(a, s, c):
                             #after delay, if the current selected hour is over 17, then pick another delay hour
                             while True:
 
-                                if t1 + t2 <= 19:
+                                if t1 + t2 <= T - 1:
                                     break
 
                                 t2 = random.choice([1, 2])
+
                         else:
-                            t1 = random.randint(0, 19)
+                            t1 = random.randint(0, T - 2)
                             t2 = random.choice([1, 2])
                             # generate a new arrangement in the neighborhood of x
 
                             while True:
 
-                                if t1 + t2 <= 19:
+                                if t1 + t2 <= T - 1:
                                     break
 
                                 t1 = random.randint(0, 19)
@@ -262,6 +265,11 @@ def annealing(a, s, c):
 
                         else:
                             count = count + 1
+                            if count >= 3000:
+                                break
+
+                    if count >= 3000:
+                        break
 
 
                     #copy the best plan to the current plan
@@ -322,10 +330,13 @@ def annealing(a, s, c):
 
                     writer.writerow(d)
 
-                    if counter >= 15:
+                    if counter >= 20:
                         break
 
-                T = 0.9 * T
+                if count >= 3000:
+                    break
+
+                T0 = 0.9 * T0
 
 
             temp.append(best)
