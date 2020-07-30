@@ -154,7 +154,7 @@ def total_waiting(a, s, k, c, Q):
 #optimization
 def annealing(a, s, c, Q):
 
-    iterations = 60    #iterations for each temperature
+    iterations = 20    #iterations for each temperature
     α = 1               #airborne parameter
     #β = 1/60            #ground parameter
     global T             #全局变量T
@@ -175,8 +175,8 @@ def annealing(a, s, c, Q):
 
         for β in [1/48]:
 
-            T0 = 5  # initial temperature
-            T_min = 0.2 # minimum value of temperature
+            T0 = 10  # initial temperature
+            T_min = 1 # minimum value of temperature
 
             # initialize plan
             best = a
@@ -203,8 +203,9 @@ def annealing(a, s, c, Q):
 
                 #if not changed for too many times, then leave the current iteration
                 counter = 0
+                iter = 1
 
-                for i in range(iterations):
+                for i in range(iterations + iter * 2):
 
                     d = []
                     count = 0
@@ -288,7 +289,7 @@ def annealing(a, s, c, Q):
 
                     #consider different cost function when delay
                     cost = α * (w1 - w0) + (aircrafts * β * t2 * 60) * (1 + delay_status[t1] * 0.34)  #calculate cost(may be other ways)
-
+                    print(cost)
                     #delay hours
                     hour = 0
 
@@ -306,9 +307,9 @@ def annealing(a, s, c, Q):
 
                     elif cost >= 0:
                         #metropolis principle
-                        P = math.exp(-cost/T)
+                        P = math.exp(-cost/T)/iter
                         r = random.random()
-
+                        print(P, r)
                         if P > r:
                             w0 = w1
                             best = current[:]
@@ -328,13 +329,16 @@ def annealing(a, s, c, Q):
                             d.append(ground_delay)
                             d.append(1)
 
-                    if counter >= 20:
+                    if counter >= 15:
                         break
+
+                    print(d)
 
                 if count >= 3000:
                     break
 
-                T0 = 0.9 * T0
+                T0 = 0.7 * T0
+                iter += 1
 
 
             temp.append(best)
