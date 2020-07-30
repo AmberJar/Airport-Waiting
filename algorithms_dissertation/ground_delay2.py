@@ -6,9 +6,9 @@ import numpy as np
 
 starttime = datetime.datetime.now()
 
-T = 20  # in hours
+T = 12  # in hours
 
-def SPVA(a, s, k, c):
+def SPVA(a, s, k, c, Q):
 
     global T
 
@@ -33,13 +33,13 @@ def SPVA(a, s, k, c):
             q = 0
 
             # start
-            if n == 0 and j == 0:
+            if n == 0 and j == Q:
                 P = 1
                 Matrix[n][j] = P
 
 
             # only the start, no planes
-            elif n == 0 and j != 0:
+            elif n == 0 and j != Q:
                 P = 0
                 Matrix[n][j] = P
 
@@ -139,9 +139,9 @@ def join(a, s, t1, n, j, k):
 #based on funtion before
 #calculate the total waiting time in each hour
 
-def total_waiting(a, s, k, c):
+def total_waiting(a, s, k, c, Q):
 
-    mean_time = SPVA(a, s, k, c)
+    mean_time = SPVA(a, s, k, c, Q)
 
     total_delay = []
     for i in range(T):
@@ -152,7 +152,7 @@ def total_waiting(a, s, k, c):
 
 #heuristic
 #optimization
-def annealing(a, s, c):
+def annealing(a, s, c, Q):
 
     iterations = 60    #iterations for each temperature
     α = 1               #airborne parameter
@@ -168,38 +168,29 @@ def annealing(a, s, c):
             x = list(reader)
             aircraft_data = np.array(x, dtype='int')
 
-    data_original = list(aircraft_data[:,1]/100)
+    data_1 = list(aircraft_data[:, 1] / 100)
+    data_0 = list(aircraft_data[:, 0] / 100)
 
-    fileHeader = ["index", "airborne delay cost", "ground delay cost", "transform"]
-    csvFile = open("data.csv", "w", newline='')
-    writer = csv.writer(csvFile)
-    writer.writerow(fileHeader)
+    for k in [9]:
 
-
-
-    for k in [1, 5, 9, 13]:
-
-        for β in [1/24, 1/36, 1/48, 1/60]:
+        for β in [1/48]:
 
             T0 = 5  # initial temperature
             T_min = 0.2 # minimum value of temperature
-            best = a # initialize plan
-            data = data_original #initialize accurate plan
+
+            # initialize plan
+            best = a
+            data_leave = data_1
+            data_arrive = data_0
+
             # calculate initial result
-            splitted = total_waiting(a, s, k, c)
+            splitted = total_waiting(a, s, k, c, Q)
             w0 = sum(splitted)  # initial waiting time
             air_delay = w0 * α  # initial air delay cost
             ground_delay = 0  # initial ground delay cost
             d = []  # for writing
             temp = []  # for final comparison
             delay_hour = 0
-            # writing
-            d.append(a)
-            d.append(air_delay)
-            d.append(delay_hour)
-            d.append(0)
-
-            writer.writerow(d)
 
             temp.append(a)
             temp.append(air_delay)
@@ -253,20 +244,30 @@ def annealing(a, s, c):
                                 if t1 + t2 <= T - 1:
                                     break
 
-                                t1 = random.randint(0, 19)
+                                t1 = random.randint(0, T - 2)
                                 t2 = random.choice([1, 2])
 
-                        default = None
-                        exist = next((x for x in data if x >= t1 + 4), default)
+                        allowed = 0
 
-                        if exist:
-                            data[data.index(exist)] = data[data.index(exist)] + t2
+                        for i in range(len(data_arrive)):
+
+                            if (data_arrive[i] >= t1 + 12 and data_arrive[i] < t1 + 13) and data_leave[i] >= 12:
+
+                                allowed = i
+                                break
+
+                        if allowed:
+
+                            data_arrive[i] = data_arrive[i] + t2
+                            data_leave[i] = data_leave[i] + t2
                             break
 
                         else:
-                            count = count + 1
-                            if count >= 3000:
-                                break
+                            count += 1
+
+
+                        if count >= 3000:
+                            break
 
                     if count >= 3000:
                         break
@@ -283,10 +284,10 @@ def annealing(a, s, c):
                     d.append(current)   #record current plan
 
                     #generate new result
-                    w1 = sum(total_waiting(current, s, k, c))       #current airborne delay
+                    w1 = sum(total_waiting(current, s, k, c, Q))       #current airborne delay
 
                     #consider different cost function when delay
-                    cost = α * (w1 - w0) + (aircrafts * β * t2 * 60) * (1 + delay_status[t1] * 0.3)  #calculate cost(may be other ways)
+                    cost = α * (w1 - w0) + (aircrafts * β * t2 * 60) * (1 + delay_status[t1] * 0.34)  #calculate cost(may be other ways)
 
                     #delay hours
                     hour = 0
@@ -327,9 +328,6 @@ def annealing(a, s, c):
                             d.append(ground_delay)
                             d.append(1)
 
-
-                    writer.writerow(d)
-
                     if counter >= 20:
                         break
 
@@ -345,20 +343,27 @@ def annealing(a, s, c):
             temp.append(ground_delay)
             temp.append(k)
             temp.append(β)
-
             print(temp)
-
-    csvFile.close()
 
     return temp
 
 
 #paramters definition
-a = [6, 12, 36, 39, 35, 43, 42, 35, 36, 37, 39, 38, 37, 37, 38, 40, 38, 33, 16, 1]
+a = [36, 37, 39, 38, 37, 37, 38, 40, 38, 33, 16, 1]
 s = 40
-c = 50
+c = 30
 
-A = annealing(a, s, c)
+fileHeader = ["Initial Plan", "Initial Cost", "Final Plan", "Final Cost", "Delay Hour", "Ground Delay Cost", "K", "β"]
+csvFile = open("data.csv", "w", newline='')
+writer = csv.writer(csvFile)
+writer.writerow(fileHeader)
+
+for Q in range(30):
+
+    A = annealing(a, s, c, Q)
+    writer.writerow(A)
+
+csvFile.close()
 
 endtime = datetime.datetime.now()
 
