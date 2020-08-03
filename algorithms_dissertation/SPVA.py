@@ -86,6 +86,7 @@ def SPVA(a, s, k, c):
                 P = p1 + p2
 
                 Matrix[n][j] = P
+
     AWT = []
 
     for i in range(0, t):

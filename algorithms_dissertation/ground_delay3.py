@@ -6,7 +6,7 @@ import numpy as np
 
 starttime = datetime.datetime.now()
 
-T = 12  # in hours
+T = 8  # in hours
 
 def SPVA(a, s, k, c, Q):
 
@@ -228,7 +228,7 @@ def annealing(a, s, c, Q):
 
                         for i in range(len(data_arrive)):
 
-                            if (data_arrive[i] >= t1 + 12 and data_arrive[i] < t1 + 13) and data_leave[i] >= 12:
+                            if (data_arrive[i] >= t1 + 4 and data_arrive[i] < t1 + 5) and data_leave[i] >= 4:
 
                                 allowed = i
                                 break
@@ -311,7 +311,7 @@ def annealing(a, s, c, Q):
                 if count >= 3000:
                     break
 
-                T0 = 0.75 * T0
+                T0 = 0.85 * T0
                 iter += 1
 
 
@@ -327,7 +327,7 @@ def annealing(a, s, c, Q):
 
 
 #paramters definition
-a = [36, 37, 39, 38, 37, 37, 38, 40, 38, 33, 16, 1]
+a = [6,12,36,39,35,43,42,35]
 s = 40
 c = 30
 
