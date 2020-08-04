@@ -6,7 +6,7 @@ import numpy as np
 
 starttime = datetime.datetime.now()
 
-T = 12  # in hours
+T = 8  # in hours
 
 def SPVA(a, s, k, c, Q):
 
