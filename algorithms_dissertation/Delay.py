@@ -101,15 +101,15 @@ def main(a, s, k, c):
 
             mean_ql = mean_ql + Matrix[i][j] * j
 
+            if i == 8:
+                print(Matrix[i][j])
+
         mean_ql = mean_ql * 4/3
 
         aqt = (mean_ql + 0.5) * 1.5
 
         q_length.append(mean_ql)
         data.append(aqt)
-
-    print(q_length)
-    print(data)
 
     hour_q_length = []
 
@@ -122,7 +122,6 @@ def main(a, s, k, c):
 
         hour_q_length.append(hour_q * 2)
 
-    print(hour_q_length)
 
 
 
@@ -145,10 +144,6 @@ def main(a, s, k, c):
 
 
     return 0
-
-
-
-
 
 def join(a, s, t1, n, j):
     q = (((a[math.floor((n - 1) * t1)] / s) ** j) *

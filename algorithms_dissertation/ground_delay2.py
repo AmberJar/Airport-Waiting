@@ -6,7 +6,7 @@ import numpy as np
 
 starttime = datetime.datetime.now()
 
-T = 12  # in hours
+T = 15  # in hours
 
 def SPVA(a, s, k, c, Q):
 
@@ -152,10 +152,10 @@ def annealing(a, s, c, Q):
 
     for k in [9]:
 
-        for β in [1/48]:
+        for β in [1/36]:
 
-            T0 = 5  # initial temperature
-            T_min = 0.5 # minimum value of temperature
+            T0 = 10  # initial temperature
+            T_min = 1 # minimum value of temperature
 
             # initialize plan
             best = a
@@ -181,21 +181,21 @@ def annealing(a, s, c, Q):
                 counter = 0
                 iter = 1
 
-                for i in range(iterations + iter * 2):
+                for i in range(iterations):
 
                     d = []
                     count = 0
 
                     while(True):
 
-                        if (random.random() >= 0.60 - iterations * 0.004):
+                        if (random.random() >= 0.30 - iterations * 0.004):
                             #find the most busy hour, randomly choose an hour that is the current one, the one before, or two hours before
                             t1 = int(splitted.index(max(splitted))) - random.choice([0, 1])
 
                             #if the selected hour is less than 0, then pick another one
                             while True:
 
-                                if t1 >= 0 and t1 <= T - 2:
+                                if t1 >= 0 and t1 <= T - 2 - 3:
                                     break
 
                                 t1 = splitted.index(max(splitted)) - random.choice([0, 1])
@@ -206,22 +206,22 @@ def annealing(a, s, c, Q):
                             #after delay, if the current selected hour is over 17, then pick another delay hour
                             while True:
 
-                                if t1 + t2 <= T - 1:
+                                if t1 + t2 <= T - 1 - 3:
                                     break
 
                                 t2 = random.choice([1, 2])
 
                         else:
-                            t1 = random.randint(0, T - 2)
+                            t1 = random.randint(0, T - 2 - 3)
                             t2 = random.choice([1, 2])
                             # generate a new arrangement in the neighborhood of x
 
                             while True:
 
-                                if t1 + t2 <= T - 1:
+                                if t1 + t2 <= T - 1 - 3:
                                     break
 
-                                t1 = random.randint(0, T - 2)
+                                t1 = random.randint(0, T - 2 - 3)
                                 t2 = random.choice([1, 2])
 
                         allowed = 0
@@ -243,10 +243,10 @@ def annealing(a, s, c, Q):
                             count += 1
 
 
-                        if count >= 3000:
+                        if count >= 300:
                             break
 
-                    if count >= 3000:
+                    if count >= 300:
                         break
 
 
@@ -282,7 +282,7 @@ def annealing(a, s, c, Q):
 
                     elif cost >= 0:
                         #metropolis principle
-                        P = math.exp(-cost/T)/iter
+                        P = math.exp(-cost/T0)/iter
                         r = random.random()
                         print(P, r)
                         if P > r:
@@ -308,10 +308,10 @@ def annealing(a, s, c, Q):
 
                     print(d)
 
-                if count >= 3000:
+                if count >= 300:
                     break
 
-                T0 = 0.75 * T0
+                T0 = 0.85 * T0
                 iter += 1
 
 
@@ -327,7 +327,7 @@ def annealing(a, s, c, Q):
 
 
 #paramters definition
-a = [36, 37, 39, 38, 37, 37, 38, 40, 38, 33, 16, 1]
+a = [36, 37, 39, 38, 37, 37, 38, 40, 38, 33, 16, 1, 0, 0, 0]
 s = 40
 c = 30
 

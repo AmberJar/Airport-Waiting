@@ -1,12 +1,18 @@
 import math
 import datetime
-
+import random
+import csv
+import numpy as np
 
 starttime = datetime.datetime.now()
 
+T = 20  # in hours
+
 def SPVA(a, s, k, c):
 
-    T = 18  # in hours
+    global T
+
+    P = 0
 
     # time unit
     t1 = 1 / s
@@ -15,7 +21,7 @@ def SPVA(a, s, k, c):
     t = math.floor(T / t1)
 
     # create matrix for the data
-    Matrix = [[0 for x in range(c + 1)] for y in range(t)]
+    Matrix = [[0 for x in range(c +1)] for y in range(t)]
 
     # loop for time period
     for n in range(0, t):
@@ -38,9 +44,8 @@ def SPVA(a, s, k, c):
                 Matrix[n][j] = P
 
             # probability when the queues not reaching maximum
-            elif n > 0 and j < c:
+            elif n >= 1 and j < c:
                 # initial value
-                p1 = 0
                 p2 = 0
 
                 # estimate of the probability of j new planes joining the queue
@@ -56,55 +61,46 @@ def SPVA(a, s, k, c):
                 P = p1 + p2
                 Matrix[n][j] = P
 
-            elif n > 0 and j == c:
-                k1 = 0
-                k2 = 0
+            elif n >= 1 and j == c:
 
-                # initial value
-                p1 = 0
-                p2 = 0
-
-                # calculate the first part of the formula
-                for m in range(0, c):
-                    k1 = k1 + join(a, s, t1, n, m, k)
-
-                k1 = 1 - k1
-
-                p1 = Matrix[n - 1][0] * k1
-
-                # calculate the second part of the Probability formula
-                for i in range(1, c + 1):
-
-                    # estimate of the probability that at least c new planes
-                    for m in range(0, c - i + 1):
-                        k2 = k2 + join(a, s, t1, n, m, k)
-
-                    k2 = 1 - k2
-
-                    p2 = p2 + Matrix[n - 1][i] * k2
-
-                P = p1 + p2
+                P = 1 - sum(Matrix[n][:])
 
                 Matrix[n][j] = P
 
-    AWT = []
 
-    for i in range(0, t):
+
+    AWT = []
+    q_length = []
+
+    for n in range(0, t):
 
         mean_ql = 0
         awt = 0
-        if i % 40 != 0:
-            continue
 
-        for j in range(0,c + 1):
+        for j in range(0, c + 1):
 
-            mean_ql = mean_ql + Matrix[i][j] * j
+            mean_ql = mean_ql + Matrix[n][j] * j
 
-        awt = ((mean_ql + 0.5) * 1.5) * 40/60
+            if n == 8:
+                print(Matrix[n][j])
 
-        AWT.append(awt)
+        q_length.append(mean_ql)
 
-    return AWT
+    results = [] #AWT hourly
+
+    for i in range(0, T):
+
+        hour_q = 0
+
+        for j in range(s):
+
+            hour_q = hour_q + q_length[s * i + j]
+
+        hour_awt = (hour_q/40 + 0.5) * 1.5
+        results.append(hour_awt)
+
+    #return the results of average delay in different hours
+    return results
 
 
 def binco(k, j):
@@ -112,39 +108,35 @@ def binco(k, j):
 
     return q
 
+
 def join(a, s, t1, n, j, k):
-    q = binco(k, j) * (a[math.floor((n - 1) * t1)] ** j) * (k * s) ** k / (a[math.floor((n - 1) * t1)] + k * s) ** (k + j)
-    return q
-
-
-
-#based on funtion before
-#calculate the total waiting time in each hour
+    q = ((a[math.floor((n - 1) * t1)] ** j) * ((k * s) ** k)) / (a[math.floor((n - 1) * t1)] + k * s) ** (k + j)
+    p = binco(k, j)
+    tmp = p * q
+    return tmp
 
 #paramters definition
-a = [35, 31, 28, 40, 33, 35, 37, 35, 38, 32, 32, 35, 31, 34, 28, 21, 28, 24]
+a = [6, 12, 36, 39, 35, 43, 42, 35, 36, 37, 39, 38, 37, 37, 38, 40, 38, 33, 16, 1]
 s = 40
-c = 50
-
+c = 30
+k = 9
 #different values of k
 k_changes = []
 
-for k in range(1, 2):
-
-    mean_time = []
+def total_waiting(a, s, k, c):
 
     mean_time = SPVA(a, s, k, c)
 
-    total_delay = 0
+    total_delay = []
+    for i in range(T):
+        total_delay.append(mean_time[i] * a[i])
 
-    for i in range(18):
-        total_delay = total_delay + mean_time[i] * a[i]
-
-    k_changes.append(total_delay)
+    #return total delay of each 18 hour (A 1 x 18 list)
+    return total_delay
 
 
-
-print(k_changes)
+A = sum(total_waiting(a, s, k, c))
+print(A)
 
 endtime = datetime.datetime.now()
 

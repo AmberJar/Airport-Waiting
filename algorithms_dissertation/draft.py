@@ -1,27 +1,22 @@
 import math
-import datetime
-import random
 import csv
-import numpy as np
 
-starttime = datetime.datetime.now()
+T = 20  # in hours
 
-T = 8  # in hours
 
-def SPVA(a, s, k, c, Q):
+def main(a, s, k, c):
+    P = 0
 
     global T
 
-    P = 0
-
     # time unit
-    t1 = 1 / s
+    t1 = (k + 1) / (k * s)
 
     # number of times
     t = math.floor(T / t1)
 
     # create matrix for the data
-    Matrix = [[0 for x in range(c +1)] for y in range(t)]
+    Matrix = [[0 for x in range(c + 1)] for y in range(t)]
 
     # loop for time period
     for n in range(0, t):
@@ -33,120 +28,126 @@ def SPVA(a, s, k, c, Q):
             q = 0
 
             # start
-            if n == 0 and j == Q:
+            if n == 0 and j == 0:
                 P = 1
                 Matrix[n][j] = P
 
 
             # only the start, no planes
-            elif n == 0 and j != Q:
+            elif n == 0 and j != 0:
                 P = 0
                 Matrix[n][j] = P
 
             # probability when the queues not reaching maximum
-            elif n >= 1 and j < c:
+            elif n > 0 and j < c:
                 # initial value
+                p1 = 0
                 p2 = 0
 
                 # estimate of the probability of j new planes joining the queue
-                q = join(a, s, t1, n, j, k)
+                q = join(a, s, t1, n, j)
 
                 # calculate the first part of the formula
                 p1 = Matrix[n - 1][0] * q
 
                 # calculate the second part of the Probability formula
                 for i in range(1, j + 2):
-                    p2 = p2 + Matrix[n - 1][i] * join(a, s, t1, n, j - i + 1, k)
+                    p2 = p2 + Matrix[n - 1][i] * join(a, s, t1, n, j - i + 1)
 
                 P = p1 + p2
                 Matrix[n][j] = P
 
-            elif n >= 1 and j == c:
+            elif n > 0 and j == c:
+                k1 = 0
+                k2 = 0
 
-                P = 1 - sum(Matrix[n][:])
+                # initial value
+                p1 = 0
+                p2 = 0
+
+                # calculate the first part of the formula
+                for m in range(0, c):
+                    k1 = k1 + join(a, s, t1, n, m)
+
+                k1 = 1 - k1
+
+                p1 = Matrix[n - 1][0] * k1
+
+                # calculate the second part of the Probability formula
+                for i in range(1, c + 1):
+
+                    # estimate of the probability that at least c new planes
+                    for m in range(0, c - i + 1):
+                        k2 = k2 + join(a, s, t1, n, m)
+
+                    k2 = 1 - k2
+
+                    p2 = p2 + Matrix[n - 1][i] * k2
+
+                P = p1 + p2
 
                 Matrix[n][j] = P
 
 
-
-    AWT = []
+    data = []
     q_length = []
 
-    for n in range(0, t):
+    for i in range(0, t):
 
         mean_ql = 0
-        awt = 0
+        aqt = 0
 
-        for j in range(0, c + 1):
+        for j in range(0,c + 1):
 
-            mean_ql = mean_ql + Matrix[n][j] * j
+            mean_ql = mean_ql + Matrix[i][j] * j
+
+            if i == 8:
+                print(Matrix[i][j])
+
+        mean_ql = mean_ql * 4/3
+
+        aqt = (mean_ql + 0.5) * 1.5
 
         q_length.append(mean_ql)
+        data.append(aqt)
 
-    results = [] #AWT hourly
+    hour_q_length = []
 
     for i in range(0, T):
 
         hour_q = 0
 
-        for j in range(s):
+        for j in range(30):
+            hour_q = hour_q + q_length[30 * i + j]
 
-            hour_q = hour_q + q_length[s * i + j]
-
-        hour_awt = (hour_q/40 + 0.5) * 1.5
-        results.append(hour_awt)
-
-    #return the results of average delay in different hours
-    return results
+        hour_q_length.append(hour_q * 2)
 
 
-def binco(k, j):
-    q = math.factorial(k - 1 + j)/(math.factorial(j) * math.factorial(k - 1))
+    #for i in range(0, t):
+     #   for j in range(0, c + 1):
+      #      if i % (1 / t1) == 0:
+       #          print(f"hour{round(i / 30, 2)} planes{j}  time T{i} probability", Matrix[i][j])
+        #         data.append(Matrix[i][j])
+
+    #with open("file.csv", 'w', newline='') as f:
+      #  w = csv.writer(f)
+       # w.writerow(data)
+
+    #for i in range(18):
+     #   for j in range(51 * i, 51 * ( i + 1)) :
+      #      print(data[j], end = ",")
+       # print(end="\n")
+
+
+
+    return 0
+
+def join(a, s, t1, n, j):
+    q = (((a[math.floor((n - 1) * t1)] / s) ** j) *
+         math.exp(-a[math.floor((n - 1) * t1)] / s)) / math.factorial(j)
 
     return q
 
 
-def join(a, s, t1, n, j, k):
-    q = ((a[math.floor((n - 1) * t1)] ** j) * ((k * s) ** k)) / (a[math.floor((n - 1) * t1)] + k * s) ** (k + j)
-    p = binco(k, j)
-    tmp = p * q
-    return tmp
-
-
-
-#based on funtion before
-#calculate the total waiting time in each hour
-
-def total_waiting(a, s, k, c, Q):
-
-    mean_time = SPVA(a, s, k, c, Q)
-
-    total_delay = []
-    for i in range(T):
-        hour_delay = mean_time[i] * a[i]
-        total_delay.append(hour_delay)
-
-    #return total delay of each 18 hour (A 1 x 18 list)
-    return total_delay
-
-#paramters definition
-a = [36, 37, 39, 38, 37, 37, 38, 40, 38, 33, 16, 1]
-s = 40
-c = 30
-k = 10
-
-for Q in range(31):
-
-    A = total_waiting(a, s, k, c, Q)
-    print(sum(A))
-
-
-endtime = datetime.datetime.now()
-
-print(endtime - starttime)
-
-
-
-
-
+main(a=[6, 12, 36, 39, 35, 43, 42, 35, 36, 37, 39, 38, 37, 37, 38, 40, 38, 33, 16, 1], s=40, k=3, c=50)
 
