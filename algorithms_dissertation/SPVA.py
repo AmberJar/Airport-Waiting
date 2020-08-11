@@ -30,13 +30,13 @@ def SPVA(a, s, k, c):
         for j in range(0, c + 1):
 
             # define variable
+            P = 0
             q = 0
 
             # start
             if n == 0 and j == 0:
                 P = 1
                 Matrix[n][j] = P
-
 
             # only the start, no planes
             elif n == 0 and j != 0:
@@ -46,7 +46,9 @@ def SPVA(a, s, k, c):
             # probability when the queues not reaching maximum
             elif n >= 1 and j < c:
                 # initial value
+                p1 = 0
                 p2 = 0
+                q = 0
 
                 # estimate of the probability of j new planes joining the queue
                 q = join(a, s, t1, n, j, k)
@@ -56,20 +58,49 @@ def SPVA(a, s, k, c):
 
                 # calculate the second part of the Probability formula
                 for i in range(1, j + 2):
-                    p2 = p2 + Matrix[n - 1][i] * join(a, s, t1, n, j - i + 1, k)
+                    p2 = p2 + Matrix[n - 1][i] * join(a, s, t1, n, (j - i + 1), k)
 
                 P = p1 + p2
                 Matrix[n][j] = P
 
             elif n >= 1 and j == c:
 
-                P = 1 - sum(Matrix[n][:])
+                k1 = 0
+
+                # initial value
+                p1 = 0
+                p2 = 0
+
+                # calculate the first part of the formula
+                for m in range(0, c):
+                    k1 = k1 + join(a, s, t1, n, m, k)
+
+                k1 = 1 - k1
+
+                p1 = Matrix[n - 1][0] * k1
+
+                # calculate the second part of the Probability formula
+                for i in range(1, c + 1):
+
+                    par = c - i + 1
+
+                    k2 = 0
+
+                    # estimate of the probability that at least c new planes
+                    for m in range(0, par):
+
+                        k2 = k2 + join(a, s, t1, n, m, k)
+
+                    k2 = 1 - k2
+
+                    p2 = p2 + Matrix[n - 1][i] * k2
+
+                P = p1 + p2
 
                 Matrix[n][j] = P
 
 
 
-    AWT = []
     q_length = []
 
     for n in range(0, t):
@@ -81,8 +112,10 @@ def SPVA(a, s, k, c):
 
             mean_ql = mean_ql + Matrix[n][j] * j
 
-            if n == 8:
+            if n == 8 * c:
                 print(Matrix[n][j])
+
+
 
         q_length.append(mean_ql)
 
@@ -102,21 +135,20 @@ def SPVA(a, s, k, c):
     #return the results of average delay in different hours
     return results
 
-
-def binco(k, j):
-    q = math.factorial(k - 1 + j)/(math.factorial(j) * math.factorial(k - 1))
-
-    return q
-
-
 def join(a, s, t1, n, j, k):
-    q = ((a[math.floor((n - 1) * t1)] ** j) * ((k * s) ** k)) / (a[math.floor((n - 1) * t1)] + k * s) ** (k + j)
-    p = binco(k, j)
+
+    q1 = k * s
+    q2 = a[math.floor(t1 * (n - 1))]
+
+    q = ((q1**k) * (q2**j))/((q1 + q2)**(k + j))
+
+    p = math.factorial(k - 1 + j)/(math.factorial(j) * math.factorial(k - 1))
+
     tmp = p * q
     return tmp
 
 #paramters definition
-a = [6, 12, 36, 39, 35, 43, 42, 35, 36, 37, 39, 38, 37, 37, 38, 40, 38, 33, 16, 1]
+a = [6, 12, 36, 39, 35, 43, 42, 35, 36, 36, 33, 32, 32, 32, 32, 31, 31, 31, 31, 33]
 s = 40
 c = 30
 k = 9

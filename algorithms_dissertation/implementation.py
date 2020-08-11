@@ -2,12 +2,17 @@ import math
 import datetime
 import random
 import csv
+import numpy as np
+
 starttime = datetime.datetime.now()
 
-def SPVA(a, s, k, c):
-    P = 0
+T = 18  # in hours
 
-    T = 18  # in hours
+def SPVA(a, s, k, c):
+
+    global T
+
+    P = 0
 
     # time unit
     t1 = 1 / s
@@ -16,7 +21,7 @@ def SPVA(a, s, k, c):
     t = math.floor(T / t1)
 
     # create matrix for the data
-    Matrix = [[0 for x in range(c + 1)] for y in range(t)]
+    Matrix = [[0 for x in range(c +1)] for y in range(t)]
 
     # loop for time period
     for n in range(0, t):
@@ -25,6 +30,7 @@ def SPVA(a, s, k, c):
         for j in range(0, c + 1):
 
             # define variable
+            P = 0
             q = 0
 
             # start
@@ -32,17 +38,17 @@ def SPVA(a, s, k, c):
                 P = 1
                 Matrix[n][j] = P
 
-
             # only the start, no planes
             elif n == 0 and j != 0:
                 P = 0
                 Matrix[n][j] = P
 
             # probability when the queues not reaching maximum
-            elif n > 0 and j < c:
+            elif n >= 1 and j < c:
                 # initial value
                 p1 = 0
                 p2 = 0
+                q = 0
 
                 # estimate of the probability of j new planes joining the queue
                 q = join(a, s, t1, n, j, k)
@@ -52,14 +58,14 @@ def SPVA(a, s, k, c):
 
                 # calculate the second part of the Probability formula
                 for i in range(1, j + 2):
-                    p2 = p2 + Matrix[n - 1][i] * join(a, s, t1, n, j - i + 1, k)
+                    p2 = p2 + Matrix[n - 1][i] * join(a, s, t1, n, (j - i + 1), k)
 
                 P = p1 + p2
                 Matrix[n][j] = P
 
-            elif n > 0 and j == c:
+            elif n >= 1 and j == c:
+
                 k1 = 0
-                k2 = 0
 
                 # initial value
                 p1 = 0
@@ -76,8 +82,13 @@ def SPVA(a, s, k, c):
                 # calculate the second part of the Probability formula
                 for i in range(1, c + 1):
 
+                    par = c - i + 1
+
+                    k2 = 0
+
                     # estimate of the probability that at least c new planes
-                    for m in range(0, c - i + 1):
+                    for m in range(0, par):
+
                         k2 = k2 + join(a, s, t1, n, m, k)
 
                     k2 = 1 - k2
@@ -88,52 +99,46 @@ def SPVA(a, s, k, c):
 
                 Matrix[n][j] = P
 
-    AWT = []
     q_length = []
 
-    for i in range(0, t):
+    for n in range(0, t):
 
         mean_ql = 0
         awt = 0
 
         for j in range(0, c + 1):
 
-            mean_ql = mean_ql + Matrix[i][j] * j
+            mean_ql = mean_ql + Matrix[n][j] * j
 
         q_length.append(mean_ql)
 
-    hour_q_length =[]
     results = [] #AWT hourly
 
-    for i in range(0,18):
+    for i in range(0, T):
 
         hour_q = 0
 
-        for j in range(40):
+        for j in range(s):
 
-            hour_q = hour_q + q_length[40 * i + j]
+            hour_q = hour_q + q_length[s * i + j]
 
-        hour_q_length.append(hour_q / 60)
-
-        hour_queue = hour_q / 60
-        hour_awt = (hour_queue + 0.5) * 1.5
+        hour_awt = (hour_q/40 + 0.5) * 1.5
         results.append(hour_awt)
 
     #return the results of average delay in different hours
     return results
 
-
-def binco(k, j):
-    q = math.factorial(k - 1 + j)/(math.factorial(j) * math.factorial(k - 1))
-
-    return q
-
-
 def join(a, s, t1, n, j, k):
-    q = binco(k, j) * (a[math.floor((n - 1) * t1)] ** j) * (k * s) ** k / (a[math.floor((n - 1) * t1)] + k * s) ** (k + j)
-    return q
 
+    q1 = k * s
+    q2 = a[math.floor(t1 * (n - 1))]
 
+    q = ((q1**k) * (q2**j))/((q1 + q2)**(k + j))
+
+    p = math.factorial(k - 1 + j)/(math.factorial(j) * math.factorial(k - 1))
+
+    tmp = p * q
+    return tmp
 
 #based on funtion before
 #calculate the total waiting time in each hour
@@ -153,6 +158,8 @@ def total_waiting(a, s, k, c):
 #optimization
 def annealing(a, s, c):
 
+    global  T
+
     iterations = 60    #iterations for each temperature
     α = 1               #airborne parameter
     #β = 1/60            #ground parameter
@@ -165,12 +172,12 @@ def annealing(a, s, c):
     #current best plan
     best_results = []
 
-    for k in [4, 7, 10, 13]:
+    for k in [1, 5, 9, 13]:
 
         for β in [1/24, 1/36, 1/48, 1/60]:
 
-            T = 5  # initial temperature
-            T_min = 0.2 # minimum value of temperature
+            T0 = 10  # initial temperature
+            T_min = 1 # minimum value of temperature
             best = a # initialize plan
             # calculate initial result
             w0 = sum(total_waiting(a, s, k, c))  # initial waiting time
@@ -183,13 +190,13 @@ def annealing(a, s, c):
             d.append(air_delay)
             d.append(ground_delay)
             d.append(0)
-            writer.writerow(d)
+            print(d)
 
             temp.append(a)
             temp.append(air_delay)
 
             #if the temperature is low enough, then exit
-            while T >= T_min:
+            while T0 >= T_min:
 
                 #if not changed for too many times, then leave the current iteration
                 counter = 0
@@ -198,14 +205,14 @@ def annealing(a, s, c):
 
                     d = []
 
-                    if (random.random() >= 0.60 - iterations * 0.004):
+                    if (random.random() >= 0.30 - iterations * 0.004):
                         #find the most busy hour, randomly choose an hour that is the current one, the one before, or two hours before
                         t1 = int(best.index(max(best))) - random.choice([0, 1])
 
                         #if the selected hour is less than 0, then pick another one
                         while True:
 
-                            if t1 >= 0 and t1 <= 16:
+                            if t1 >= 0 and t1 <= T - 2:
                                 break
 
                             t1 = best.index(max(best)) - random.choice([0, 1])
@@ -216,21 +223,21 @@ def annealing(a, s, c):
                         #after delay, if the current selected hour is over 17, then pick another delay hour
                         while True:
 
-                            if t1 + t2 <= 17:
+                            if t1 + t2 <= T - 1:
                                 break
 
                             t2 = random.choice([1, 2])
                     else:
-                        t1 = random.randint(0, 16)
+                        t1 = random.randint(0, T - 2)
                         t2 = random.choice([1, 2])
                         # generate a new arrangement in the neighborhood of x
 
                         while True:
 
-                            if t1 + t2 <= 17:
+                            if t1 + t2 <= T - 1:
                                 break
 
-                            t1 = random.randint(0, 16)
+                            t1 = random.randint(0, T - 2)
                             t2 = random.choice([1, 2])
 
                     #copy the best plan to the current plan
@@ -263,7 +270,7 @@ def annealing(a, s, c):
 
                     elif cost >= 0:
                         #metropolis principle
-                        P = math.exp(-cost/T)
+                        P = math.exp(-cost/T0)
                         r = random.random()
 
                         if P > r:
@@ -282,12 +289,12 @@ def annealing(a, s, c):
                             d.append(1)
 
 
-                    writer.writerow(d)
+                    print(d)
 
                     if counter >= 15:
                         break
 
-                T = 0.9 * T
+                T0 = 0.85 * T0
 
 
             temp.append(best)
@@ -296,7 +303,7 @@ def annealing(a, s, c):
             temp.append(k)
             temp.append(β)
 
-            print(temp)
+            writer.writerow(temp)
 
     csvFile.close()
 
@@ -306,7 +313,7 @@ def annealing(a, s, c):
 #paramters definition
 a = [35, 31, 28, 40, 33, 35, 37, 35, 38, 32, 32, 35, 31, 34, 26, 23, 28, 24]
 s = 40
-c = 50
+c = 30
 
 A = annealing(a, s, c)
 
