@@ -209,85 +209,93 @@ def annealing(a, s, c, Q):
             while T0 >= T_min:
 
                 #if not changed for too many times, then leave the current iteration
-                counter = 0
+                count_2 = 0
                 iter = 1
+
 
                 for i in range(iterations):
 
                     d = []
-                    count = 0
 
-                    while(True):
+                    count_1 = 0
 
-                        if (random.random() >= 0.30 - iterations * 0.004):
-                            #find the most busy hour, randomly choose an hour that is the current one, the one before, or two hours before
-                            t1 = int(splitted.index(max(splitted))) - random.choice([0, 1])
+                    while True:  # max number of aircraft of the final hour
 
-                            #if the selected hour is less than 0, then pick another one
-                            while True:
+                        while True: #keep there is airplane can be delayed
 
-                                if t1 >= 0 and t1 <= T - 2 - 3:
-                                    break
+                            if (random.random() >= 0.40 + iterations * 0.004):
+                                #find the most busy hour, randomly choose an hour that is the current one, the one before, or two hours before
+                                t1 = int(splitted.index(max(splitted))) - random.choice([0, 1])
 
-                                t1 = splitted.index(max(splitted)) - random.choice([0, 1])
+                                #if the selected hour is less than 0, then pick another one
+                                while True:
 
-                            #randomly choose number of hours to delay
-                            t2 = random.choice([1, 2])
+                                    if t1 >= 0 and t1 <= T - 2 - 3:
+                                        break
 
-                            #after delay, if the current selected hour is over 17, then pick another delay hour
-                            while True:
+                                    t1 = splitted.index(max(splitted)) - random.choice([0, 1])
 
-                                if t1 + t2 <= T - 1 - 3:
-                                    break
-
+                                #randomly choose number of hours to delay
                                 t2 = random.choice([1, 2])
 
-                        else:
-                            t1 = random.randint(0, T - 2 - 3)
-                            t2 = random.choice([1, 2])
-                            # generate a new arrangement in the neighborhood of x
+                                #after delay, if the current selected hour is over 17, then pick another delay hour
+                                while True:
 
-                            while True:
+                                    if t1 + t2 <= T - 1 - 3:
+                                        break
 
-                                if t1 + t2 <= T - 1 - 3:
-                                    break
+                                    t2 = random.choice([1, 2])
 
+                            else:
                                 t1 = random.randint(0, T - 2 - 3)
                                 t2 = random.choice([1, 2])
+                                # generate a new arrangement in the neighborhood of x
 
-                        allowed = 0
+                                while True:
 
-                        for i in range(len(data_arrive)):
+                                    if t1 + t2 <= T - 1 - 3:
+                                        break
 
-                            if (data_arrive[i] >= t1 + 12 and data_arrive[i] < t1 + 13) and data_leave[i] >= 12:
+                                    t1 = random.randint(0, T - 2 - 3)
+                                    t2 = random.choice([1, 2])
 
-                                allowed = i
+                            allowed = 0
+
+                            for i in range(len(data_arrive)):
+
+                                if (data_arrive[i] >= t1 + 12 and data_arrive[i] < t1 + 13) and data_leave[i] >= 12:
+
+                                    allowed = i
+                                    break
+
+                            if allowed:
+
+                                data_arrive[i] = data_arrive[i] + t2
+                                data_leave[i] = data_leave[i] + t2
                                 break
 
-                        if allowed:
+                            else:
+                                count_2 += 1
 
-                            data_arrive[i] = data_arrive[i] + t2
-                            data_leave[i] = data_leave[i] + t2
+                            if count_2 >= 300:
+                                break
+
+                        if count_2 >= 300:
                             break
 
-                        else:
-                            count += 1
+                        #copy the best plan to the current plan
+                        current = best[:]
 
+                        #change current plan with t1 and t2
+                        aircrafts = 1   #delay one aircraft in one time shows the best efficiency
+                        current[t1] = current[t1] - aircrafts
+                        current[t1 + t2] = current[t1 + t2] + aircrafts
 
-                        if count >= 300:
+                        if current[t1 + t2] <= 30:
                             break
 
-                    if count >= 300:
+                    if count_2 >= 300:
                         break
-
-
-                    #copy the best plan to the current plan
-                    current = best[:]
-
-                    #change current plan with t1 and t2
-                    aircrafts = 1   #delay one aircraft in one time shows the best efficiency
-                    current[t1] = current[t1] - aircrafts
-                    current[t1 + t2] = current[t1 + t2] + aircrafts
 
                     d.append(current)   #record current plan
 
@@ -327,22 +335,22 @@ def annealing(a, s, c, Q):
                             d.append(ground_delay)
                             d.append(0)
                         else:
-                            counter = counter + 1
+                            count_1 += 1
 
                             d.append(α * w0)
                             d.append(delay_hour)
                             d.append(ground_delay)
                             d.append(1)
 
-                    if counter >= 15:
+                    if count_1 >= 15:
                         break
 
                     print(d)
 
-                if count >= 300:
+                if count_2 >= 300:
                     break
 
-                T0 = 0.85 * T0
+                T0 = 0.9 * T0
                 iter += 1
 
 

@@ -140,13 +140,6 @@ def join(a, s, t1, n, j, k):
     tmp = p * q
     return tmp
 
-#paramters definition
-a = [36, 37, 39, 38, 37, 37, 38, 40, 38, 33, 16, 1, 0, 0, 0]
-s = 40
-c = 30
-#different values of k
-k_changes = []
-
 def total_waiting(a, s, k, c, Q):
 
     mean_time = SPVA(a, s, k, c, Q)
@@ -214,13 +207,14 @@ def annealing(a, s, c, Q):
             while T0 >= T_min:
 
                 #if not changed for too many times, then leave the current iteration
-                counter = 0
+                count_2 = 0
+
                 iter = 1
 
                 for i in range(iterations):
 
                     d = []
-                    count = 0
+                    count_1 = 0
 
                     while(True):
 
@@ -276,13 +270,13 @@ def annealing(a, s, c, Q):
                             break
 
                         else:
-                            count += 1
+                            count_2 += 1
 
 
-                        if count >= 300:
+                        if count_2 >= 300:
                             break
 
-                    if count >= 300:
+                    if count_2 >= 300:
                         break
 
 
@@ -332,19 +326,19 @@ def annealing(a, s, c, Q):
                             d.append(ground_delay)
                             d.append(0)
                         else:
-                            counter = counter + 1
+                            count_1 += 1
 
                             d.append(α * w0)
                             d.append(delay_hour)
                             d.append(ground_delay)
                             d.append(1)
 
-                    if counter >= 15:
+                    if count_1 >= 15:
                         break
 
                     print(d)
 
-                if count >= 300:
+                if count_2 >= 300:
                     break
 
                 T0 = 0.85 * T0
@@ -370,8 +364,6 @@ def annealing(a, s, c, Q):
 a = [6, 12, 36, 39, 35, 43, 42, 35, 36, 37, 39, 38, 37, 37, 38, 40, 38, 33, 16, 1, 0, 0, 0]
 s = 40
 c = 30
-
-
 
 for Q in [0]:
 

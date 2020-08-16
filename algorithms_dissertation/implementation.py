@@ -164,7 +164,7 @@ def annealing(a, s, c):
     α = 1               #airborne parameter
     #β = 1/60            #ground parameter
 
-    fileHeader = ["index", "airborne delay cost", "ground delay cost", "transform"]
+    fileHeader = ["index", "airborne delay cost", "ground delay cost", "delay hour", "transform"]
     csvFile = open("file.csv", "w", newline='')
     writer = csv.writer(csvFile)
     writer.writerow(fileHeader)
@@ -185,10 +185,12 @@ def annealing(a, s, c):
             ground_delay = 0  # initial ground delay cost
             d = []  # for writing
             temp = []  # for final comparison
+            delay_hour = 0
             # writing
             d.append(a)
             d.append(air_delay)
             d.append(ground_delay)
+            d.append(delay_hour)
             d.append(0)
             print(d)
 
@@ -201,52 +203,59 @@ def annealing(a, s, c):
                 #if not changed for too many times, then leave the current iteration
                 counter = 0
 
-                for i in range(iterations):
+                while True:
 
-                    d = []
+                    for i in range(iterations):
 
-                    if (random.random() >= 0.30 - iterations * 0.004):
-                        #find the most busy hour, randomly choose an hour that is the current one, the one before, or two hours before
-                        t1 = int(best.index(max(best))) - random.choice([0, 1])
+                        d = []
 
-                        #if the selected hour is less than 0, then pick another one
-                        while True:
+                        if (random.random() >= 0.60 - iterations * 0.004):
+                            #find the most busy hour, randomly choose an hour that is the current one, the one before, or two hours before
+                            t1 = int(best.index(max(best))) - random.choice([0, 1])
 
-                            if t1 >= 0 and t1 <= T - 2:
-                                break
+                            #if the selected hour is less than 0, then pick another one
+                            while True:
 
-                            t1 = best.index(max(best)) - random.choice([0, 1])
+                                if t1 >= 0 and t1 <= T - 2:
+                                    break
 
-                        #randomly choose number of hours to delay
-                        t2 = random.choice([1, 2])
+                                t1 = best.index(max(best)) - random.choice([0, 1])
 
-                        #after delay, if the current selected hour is over 17, then pick another delay hour
-                        while True:
-
-                            if t1 + t2 <= T - 1:
-                                break
-
+                            #randomly choose number of hours to delay
                             t2 = random.choice([1, 2])
-                    else:
-                        t1 = random.randint(0, T - 2)
-                        t2 = random.choice([1, 2])
-                        # generate a new arrangement in the neighborhood of x
 
-                        while True:
+                            #after delay, if the current selected hour is over 17, then pick another delay hour
+                            while True:
 
-                            if t1 + t2 <= T - 1:
-                                break
+                                if t1 + t2 <= T - 1:
+                                    break
 
+                                t2 = random.choice([1, 2])
+                        else:
                             t1 = random.randint(0, T - 2)
                             t2 = random.choice([1, 2])
+                            # generate a new arrangement in the neighborhood of x
 
-                    #copy the best plan to the current plan
-                    current = best[:]
+                            while True:
 
-                    #change current plan with t1 and t2
-                    aircrafts = 1   #delay one aircraft in one time shows the best efficiency
-                    current[t1] = current[t1] - aircrafts
-                    current[t1 + t2] = current[t1 + t2] + aircrafts
+                                if t1 + t2 <= T - 1:
+                                    break
+
+                                t1 = random.randint(0, T - 2)
+                                t2 = random.choice([1, 2])
+
+
+
+                        #copy the best plan to the current plan
+                        current = best[:]
+
+                        #change current plan with t1 and t2
+                        aircrafts = 1   #delay one aircraft in one time shows the best efficiency
+                        current[t1] = current[t1] - aircrafts
+                        current[t1 + t2] = current[t1 + t2] + aircrafts
+
+                        if current[t1 + t2] <= 34:
+                            break
 
                     d.append(current)   #record current plan
 
@@ -255,23 +264,26 @@ def annealing(a, s, c):
 
 
                     cost = α * (w1 - w0) + aircrafts * β * t2 * 60  #calculate cost(may be other ways)
-
+                    print(cost)
                     #delay hours
-                    hour = 0
+
 
                     if cost < 0:
                         w0 = w1
                         best = current[:]
                         ground_delay = ground_delay + aircrafts * β * t2 * 60
+                        delay_hour = delay_hour + t2
 
                         d.append(α * w0)
                         d.append(ground_delay)
+                        d.append(delay_hour)
                         d.append(0)
 
                     elif cost >= 0:
                         #metropolis principle
                         P = math.exp(-cost/T0)
                         r = random.random()
+                        print(P, r)
 
                         if P > r:
                             w0 = w1
@@ -280,18 +292,20 @@ def annealing(a, s, c):
 
                             d.append(α * w0)
                             d.append(ground_delay)
+                            d.append(delay_hour)
                             d.append(0)
                         else:
                             counter = counter + 1
 
                             d.append(α * w0)
                             d.append(ground_delay)
+                            d.append(delay_hour)
                             d.append(1)
 
 
                     print(d)
 
-                    if counter >= 15:
+                    if counter >= 20:
                         break
 
                 T0 = 0.85 * T0
@@ -300,6 +314,7 @@ def annealing(a, s, c):
             temp.append(best)
             temp.append(w0)
             temp.append(ground_delay)
+            temp.append(delay_hour)
             temp.append(k)
             temp.append(β)
 
