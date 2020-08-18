@@ -172,7 +172,7 @@ def annealing(a, s, c):
     #current best plan
     best_results = []
 
-    for k in [1, 5, 9, 13]:
+    for k in [1, 4, 7, 10]:
 
         for β in [1/24, 1/36, 1/48, 1/60]:
 
@@ -203,13 +203,14 @@ def annealing(a, s, c):
                 #if not changed for too many times, then leave the current iteration
                 counter = 0
 
-                while True:
+                for i in range(iterations):
 
-                    for i in range(iterations):
+                    d = []
 
-                        d = []
+                    while True:  # final hour
 
-                        if (random.random() >= 0.60 - iterations * 0.004):
+
+                        if (random.random() >= 0.60 - counter * 0.004):
                             #find the most busy hour, randomly choose an hour that is the current one, the one before, or two hours before
                             t1 = int(best.index(max(best))) - random.choice([0, 1])
 
@@ -244,8 +245,6 @@ def annealing(a, s, c):
                                 t1 = random.randint(0, T - 2)
                                 t2 = random.choice([1, 2])
 
-
-
                         #copy the best plan to the current plan
                         current = best[:]
 
@@ -254,7 +253,7 @@ def annealing(a, s, c):
                         current[t1] = current[t1] - aircrafts
                         current[t1 + t2] = current[t1 + t2] + aircrafts
 
-                        if current[t1 + t2] <= 34:
+                        if current[t1 + t2] <= 30:
                             break
 
                     d.append(current)   #record current plan
@@ -308,7 +307,7 @@ def annealing(a, s, c):
                     if counter >= 20:
                         break
 
-                T0 = 0.85 * T0
+                T0 = 0.80 * T0
 
 
             temp.append(best)

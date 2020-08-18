@@ -6,7 +6,7 @@ import numpy as np
 
 starttime = datetime.datetime.now()
 
-T = 23  # in hours
+T = 20  # in hours
 
 def SPVA(a, s, k, c, Q):
 
@@ -154,7 +154,7 @@ def total_waiting(a, s, k, c, Q):
 
 #heuristic
 #optimization
-def annealing(a, s, c, Q):
+def annealing(a, s, k, c, β, Q):
 
     iterations = 30    #iterations for each temperature
     α = 1               #airborne parameter
@@ -173,202 +173,207 @@ def annealing(a, s, c, Q):
     data_1 = list(aircraft_data[:, 1] / 100)
     data_0 = list(aircraft_data[:, 0] / 100)
 
-    fileHeader = ["Initial Plan", "Initial Cost", "Final Plan", "Final Cost", "Delay Hour", "Ground Delay Cost", "K",
-                  "belta"]
-    csvFile = open("data.csv", "w", newline='')
-    writer = csv.writer(csvFile)
-    writer.writerow(fileHeader)
+    T0 = 10  # initial temperature
+    T_min = 1 # minimum value of temperature
 
-    for k in [1, 5, 9, 13]:
+    # initialize plan
+    best = a
+    data_leave = data_1
+    data_arrive = data_0
 
-        for β in [1/24, 1/36, 1/48, 1/60]:
+    # calculate initial result
+    splitted = total_waiting(a, s, k, c, Q)
+    w0 = sum(splitted)  # initial waiting time
+    air_delay = w0 * α  # initial air delay cost
+    ground_delay = 0  # initial ground delay cost
+    d = []  # for writing
+    temp = []  # for final comparison
+    delay_hour = 0
 
-            T0 = 10  # initial temperature
-            T_min = 1 # minimum value of temperature
+    temp.append(a)
+    temp.append(air_delay)
 
-            # initialize plan
-            best = a
-            data_leave = data_1
-            data_arrive = data_0
+    #if the temperature is low enough, then exit
+    while T0 >= T_min:
 
-            # calculate initial result
-            splitted = total_waiting(a, s, k, c, Q)
-            w0 = sum(splitted)  # initial waiting time
-            air_delay = w0 * α  # initial air delay cost
-            ground_delay = 0  # initial ground delay cost
-            d = []  # for writing
-            temp = []  # for final comparison
-            delay_hour = 0
+        iter = 1
 
-            temp.append(a)
-            temp.append(air_delay)
+        for i in range(iterations):
 
-            #if the temperature is low enough, then exit
-            while T0 >= T_min:
+            d = []
+            count_1 = 0
 
-                #if not changed for too many times, then leave the current iteration
+            while True:  # max number of aircraft of the final hour
+
+                # if not changed for too many times, then leave the current iteration
                 count_2 = 0
 
-                iter = 1
+                while True:  # keep there is airplane can be delayed
 
-                for i in range(iterations):
+                    if (random.random() >= 0.40 + iter * 0.004):
+                        # find the most busy hour, randomly choose an hour that is the current one, the one before, or two hours before
+                        t1 = int(splitted.index(max(splitted))) - random.choice([0, 1])
 
-                    d = []
-                    count_1 = 0
+                        # if the selected hour is less than 0, then pick another one
+                        while True:
 
-                    while(True):
-
-                        if (random.random() >= 0.30 - iterations * 0.004):
-                            #find the most busy hour, randomly choose an hour that is the current one, the one before, or two hours before
-                            t1 = int(splitted.index(max(splitted))) - random.choice([0, 1])
-
-                            #if the selected hour is less than 0, then pick another one
-                            while True:
-
-                                if t1 >= 0 and t1 <= T - 2 - 3:
-                                    break
-
-                                t1 = splitted.index(max(splitted)) - random.choice([0, 1])
-
-                            #randomly choose number of hours to delay
-                            t2 = random.choice([1, 2])
-
-                            #after delay, if the current selected hour is over 17, then pick another delay hour
-                            while True:
-
-                                if t1 + t2 <= T - 1 - 3:
-                                    break
-
-                                t2 = random.choice([1, 2])
-
-                        else:
-                            t1 = random.randint(0, T - 2 - 3)
-                            t2 = random.choice([1, 2])
-                            # generate a new arrangement in the neighborhood of x
-
-                            while True:
-
-                                if t1 + t2 <= T - 1 - 3:
-                                    break
-
-                                t1 = random.randint(0, T - 2 - 3)
-                                t2 = random.choice([1, 2])
-
-                        allowed = 0
-
-                        for i in range(len(data_arrive)):
-
-                            if (data_arrive[i] >= t1 + 4 and data_arrive[i] < t1 + 5) and data_leave[i] >= 4:
-
-                                allowed = i
+                            if t1 >= 0 and t1 <= T - 2:
                                 break
 
-                        if allowed:
+                            t1 = splitted.index(max(splitted)) - random.choice([0, 1])
 
-                            data_arrive[i] = data_arrive[i] + t2
-                            data_leave[i] = data_leave[i] + t2
+                        # randomly choose number of hours to delay
+                        t2 = random.choice([1, 2])
+
+                        # after delay, if the current selected hour is over 17, then pick another delay hour
+                        while True:
+
+                            if t1 + t2 <= T - 1:
+                                break
+
+                            t2 = random.choice([1, 2])
+
+                    else:
+                        t1 = random.randint(0, T - 2)
+                        t2 = random.choice([1, 2])
+                        # generate a new arrangement in the neighborhood of x
+
+                        while True:
+
+                            if t1 + t2 <= T - 1:
+                                break
+
+                            t1 = random.randint(0, T - 2)
+                            t2 = random.choice([1, 2])
+
+                    allowed = 0
+
+                    for i in range(len(data_arrive)):
+
+                        if (data_arrive[i] >= t1 + 4 and data_arrive[i] < t1 + 5) and data_leave[i] >= 4:
+                            allowed = i
                             break
 
-                        else:
-                            count_2 += 1
 
+                    if allowed:
 
-                        if count_2 >= 300:
-                            break
+                        data_arrive[allowed] = data_arrive[allowed] + t2
+                        data_leave[allowed] = data_leave[allowed] + t2
+                        break
+
+                    else:
+                        count_2 += 1
 
                     if count_2 >= 300:
                         break
 
-
-                    #copy the best plan to the current plan
-                    current = best[:]
-
-                    #change current plan with t1 and t2
-                    aircrafts = 1   #delay one aircraft in one time shows the best efficiency
-                    current[t1] = current[t1] - aircrafts
-                    current[t1 + t2] = current[t1 + t2] + aircrafts
-
-                    d.append(current)   #record current plan
-
-                    #generate new result
-                    w1 = sum(total_waiting(current, s, k, c, Q))       #current airborne delay
-
-                    #consider different cost function when delay
-                    cost = α * (w1 - w0) + (aircrafts * β * t2 * 60)  #calculate cost(may be other ways)
-                    print(cost)
-                    #delay hours
-                    hour = 0
-
-                    if cost < 0:
-                        w0 = w1
-                        best = current[:]
-                        ground_delay = ground_delay + aircrafts * β * t2 * 60
-                        delay_hour = delay_hour + t2
-
-                        d.append(α * w0)
-                        d.append(delay_hour)
-                        d.append(ground_delay)
-                        d.append(0)
-
-                    elif cost >= 0:
-                        #metropolis principle
-                        P = math.exp(-cost/T0)/iter
-                        r = random.random()
-                        print(P, r)
-                        if P > r:
-                            w0 = w1
-                            best = current[:]
-                            ground_delay = ground_delay + aircrafts * β * t2 * 60
-                            delay_hour = delay_hour + t2
-
-                            d.append(α * w0)
-                            d.append(delay_hour)
-                            d.append(ground_delay)
-                            d.append(0)
-                        else:
-                            count_1 += 1
-
-                            d.append(α * w0)
-                            d.append(delay_hour)
-                            d.append(ground_delay)
-                            d.append(1)
-
-                    if count_1 >= 15:
-                        break
-
-                    print(d)
-
                 if count_2 >= 300:
                     break
 
-                T0 = 0.85 * T0
-                iter += 1
+                # copy the best plan to the current plan
+                current = best[:]
+
+                # change current plan with t1 and t2
+                aircrafts = 1  # delay one aircraft in one time shows the best efficiency
+                current[t1] = current[t1] - aircrafts
+                current[t1 + t2] = current[t1 + t2] + aircrafts
+
+                if current[T - 1] <= 30:
+                    break
+
+            if count_2 >= 300:
+                break
+
+            d.append(current)   #record current plan
+
+            #generate new result
+            w1 = sum(total_waiting(current, s, k, c, Q))       #current airborne delay
+
+            #consider different cost function when delay
+            cost = α * (w1 - w0) + (aircrafts * β * t2 * 60)  #calculate cost(may be other ways)
+            print(cost)
+            #delay hours
+            hour = 0
+
+            if cost < 0:
+                w0 = w1
+                best = current[:]
+                ground_delay = ground_delay + aircrafts * β * t2 * 60
+                delay_hour = delay_hour + t2
+
+                d.append(α * w0)
+                d.append(delay_hour)
+                d.append(ground_delay)
+                d.append(0)
+
+            elif cost >= 0:
+                #metropolis principle
+                P = math.exp(-cost/T0)/iter
+                r = random.random()
+                print(P, r)
+                if P > r:
+                    w0 = w1
+                    best = current[:]
+                    ground_delay = ground_delay + aircrafts * β * t2 * 60
+                    delay_hour = delay_hour + t2
+
+                    d.append(α * w0)
+                    d.append(delay_hour)
+                    d.append(ground_delay)
+                    d.append(0)
+                else:
+                    count_1 += 1
+
+                    d.append(α * w0)
+                    d.append(delay_hour)
+                    d.append(ground_delay)
+                    d.append(1)
+
+            if count_1 >= 15:
+                break
+
+            print(d)
+            iter += 1
+
+        if count_2 >= 300:
+            break
+
+        T0 = 0.85 * T0
 
 
-            temp.append(best)
-            temp.append(w0)
-            temp.append(delay_hour)
-            temp.append(ground_delay)
-            temp.append(k)
-            temp.append(β)
-            writer.writerow(temp)
 
-            print(temp)
+    temp.append(best)
+    temp.append(w0)
+    temp.append(delay_hour)
+    temp.append(ground_delay)
+    temp.append(k)
+    temp.append(β)
 
-    csvFile.close()
+    print(temp)
 
     return temp
 
 
 #paramters definition
-a = [6, 12, 36, 39, 35, 43, 42, 35, 36, 37, 39, 38, 37, 37, 38, 40, 38, 33, 16, 1, 0, 0, 0]
+a = [6, 12, 36, 39, 35, 43, 42, 35, 36, 37, 39, 38, 37, 37, 38, 40, 38, 33, 16, 1]
 s = 40
 c = 30
+fileHeader = ["Initial Plan", "Initial Cost", "Final Plan", "Final Cost", "Delay Hour", "Ground Delay Cost", "K",
+              "belta"]
+csvFile = open("data.csv", "w", newline='')
+writer = csv.writer(csvFile)
+writer.writerow(fileHeader)
 
 for Q in [0]:
 
-    A = annealing(a, s, c, Q)
+    for k in [1, 4, 7, 10]:
 
+        for r in [1/24, 1/36, 1/48, 1/60]:
+
+            A = annealing(a, s, k, c, r, Q)
+            writer.writerow(A)
+
+csvFile.close()
 
 endtime = datetime.datetime.now()
 
